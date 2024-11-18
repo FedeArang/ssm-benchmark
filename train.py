@@ -103,6 +103,10 @@ if __name__ == "__main__":
     config = parser.parse_args().config
     print("\nUsing config {0}".format(config))
 
+    '''config = {'seed': 1919, 'save': True, 'dataset' : {'name': "CIFAR-10", 'name_': "cifar", 'grayscale': True}, 'train': {'num_epochs': 50, 'batch_size': 64, 'lr': 0.0002, 'wd': 0.01, 'warmup': 5},
+              'model': {'layer': "mamba", 'version': "mamba2", 'num_layers': 2, 'input_dim': 1, 'output_dim': 10, 'hidden_dim': 128, 'state_dim': 64, 'conv_dim': 4, 'expansion': 1, 'dropout': 0.0, 'glu': True, 'norm': "layer", 'dual': False,
+                'prenorm': False, 'lambd': -1.0, 'pooling': "mean", 'embedding': True}}'''
+
     # get GPU info
     if not torch.cuda.is_available():
         raise NotImplementedError("Cannot run on CPU!")

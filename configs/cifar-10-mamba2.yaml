@@ -31,5 +31,6 @@ model:
   norm: "layer"
   dual: False
   prenorm: False
+  lambd: -1.0
   pooling: "mean"
   embedding: True

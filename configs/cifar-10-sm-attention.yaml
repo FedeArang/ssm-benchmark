@@ -30,6 +30,7 @@ model:
   num_heads: 8
   att_dropout: 0.2
   norm: "layer"
+  lambd: -1.0
   # embedding & positional embedding
   # WARNING: make sure to set dataset.tokenize to True
   embedding: True

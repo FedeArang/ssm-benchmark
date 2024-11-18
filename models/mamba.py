@@ -136,7 +136,7 @@ class SSD(nn.Module):
         return out
 
 class MambaBlock(torch.nn.Module):
-    def __init__(self, version, hidden_dim, state_dim, conv_dim, expansion, dropout, glu, norm, prenorm):
+    def __init__(self, version, hidden_dim, state_dim, conv_dim, expansion, dropout, glu, norm, prenorm, lambd, trainable_lambd = False):
         super().__init__()
         if version == "mamba1":
             self.mamba = MambaLayer(d_model=hidden_dim, d_state=state_dim, d_conv=conv_dim, expand=expansion)
@@ -157,7 +157,12 @@ class MambaBlock(torch.nn.Module):
             raise RuntimeError("dimensions don't agree for batch norm to work")
             self.norm = nn.BatchNorm1d(hidden_dim)
         self.prenorm = prenorm
-        self.lambd = nn.Parameter(torch.ones(1), requires_grad=True)
+        
+        if trainable_lambd:
+            self.lambd = nn.Parameter(lambd, requires_grad=True)
+        else:
+            self.lambd = lambd
+
 
     def forward(self, x):
         skip = self.lambd*x
@@ -174,7 +179,7 @@ class MambaBlock(torch.nn.Module):
         return x
     
 class Mamba(torch.nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, trainable_lambd=False):
         super().__init__()
         version = cfg["version"]
         num_blocks = cfg["num_layers"]
@@ -191,8 +196,14 @@ class Mamba(torch.nn.Module):
         dual = cfg["dual"]
         pooling = cfg["pooling"]
 
+        try:
+            self.lambd=cfg["lambda"]*torch.ones(1)
+        except:
+            self.lambd = torch.ones(1)
+
+
         self.linear_encoder = nn.Linear(input_dim, hidden_dim)
-        self.blocks = nn.Sequential(*[MambaBlock(version, hidden_dim, state_dim, conv_dim, expansion, dropout, glu, norm, prenorm) for _ in range(num_blocks)])
+        self.blocks = nn.Sequential(*[MambaBlock(version, hidden_dim, state_dim, conv_dim, expansion, dropout, glu, norm, prenorm, self.lambd, trainable_lambd=trainable_lambd) for _ in range(num_blocks)])
         self.linear_decoder = nn.Linear(hidden_dim, output_dim)
         self.pooling = pooling
         self.softmax = nn.LogSoftmax(dim=1)

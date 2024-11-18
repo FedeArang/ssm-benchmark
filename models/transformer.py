@@ -267,7 +267,7 @@ class MHNA(nn.Module):
         return 2 * self.d_model * self.d_qk
 
 class TransformerBlock(nn.Module):
-    def __init__(self, hidden_dim, cfg):
+    def __init__(self, hidden_dim, cfg, trainable_lambd=False):
         super().__init__()
         # remove configs only used at this level
         d_model = hidden_dim
@@ -278,6 +278,14 @@ class TransformerBlock(nn.Module):
         dropout = cfg["dropout"]
         norm = cfg["norm"]
         self.attention_fn = cfg["attention_fn"]
+
+        if trainable_lambd:
+            self.lambd = nn.Parameter(torch.ones(1), requires_grad=True)
+        else:
+            try:
+                self.lambd=cfg["lambda"]*torch.ones(1)
+            except:
+                self.lambd = torch.ones(1)
 
         # attention function
         if self.attention_fn in ["sm-attention"]:
@@ -300,7 +308,7 @@ class TransformerBlock(nn.Module):
         else:
             raise RuntimeError("{0} norm not implemented yet!".format(norm))
         self.dropout = nn.Dropout(dropout)
-        self.lambd = nn.Parameter(torch.ones(1), requires_grad = True)
+        #self.lambd = nn.Parameter(torch.ones(1), requires_grad = True)
 
     def forward(self, x):
         skip = self.lambd*x
@@ -315,7 +323,7 @@ class TransformerBlock(nn.Module):
         return x + y
     
 class Transformer(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, trainable_lambd = False):
         super().__init__()      
         # remove configs only used at this level
         input_dim = cfg.pop("input_dim")
@@ -337,7 +345,7 @@ class Transformer(nn.Module):
             self.encoder = TokenEmbeddings(hidden_dim, vocab_size, max_len)
         else:
             self.encoder = nn.Linear(input_dim, hidden_dim)
-        self.layers = nn.Sequential(*[TransformerBlock(hidden_dim, cfg) for _ in range(num_layers)])
+        self.layers = nn.Sequential(*[TransformerBlock(hidden_dim, cfg, trainable_lambd=trainable_lambd) for _ in range(num_layers)])
         if self.classify:
             self.classifier = ClassifierHead(hidden_dim, mlp_dim, output_dim, pooling)
         else:
